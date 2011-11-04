@@ -43,7 +43,9 @@ enum DeviceType {
     FREEDM_GENERIC,
     DRER,
     DESD,
-    LOAD
+    LOAD,
+    GRID,
+    DG
 };
 
         } // namespace physicaldevices

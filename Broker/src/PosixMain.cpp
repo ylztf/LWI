@@ -251,6 +251,7 @@ int main (int argc, char* argv[])
         factory.CreateDevice( "solar", "pv1" );
         factory.CreateDevice( "battery", "battery1" );
         factory.CreateDevice( "load", "load1" );
+        factory.CreateDevice( "grid", "grid1" );
 
         //quick test
         double pvPower = m_phyManager.GetDevice("pv1")->get_powerLevel();
@@ -260,6 +261,8 @@ int main (int argc, char* argv[])
 
         m_phyManager.GetDevice("load1")->turnOn();
         double loadPower = m_phyManager.GetDevice("load1")->get_powerLevel();
+
+         m_phyManager.GetDevice("grid1")->turnOn();
 
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;

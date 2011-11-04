@@ -69,6 +69,14 @@ void CPSCADFactory::CreateDevice( const std::string & p_type,
     {
         device = DevicePtr(new CBatteryDevice( m_client, m_manager, p_devid ));
     }
+    else if( p_type == "grid" )
+    {
+        device = DevicePtr(new CGridLinkDevice( m_client, m_manager, p_devid ));
+    }
+    else if( p_type == "dg" )
+    {
+        device = DevicePtr(new CDieselGeneratorDevice( m_client, m_manager, p_devid ));
+    }
     else
     {
         Logger::Error << "Cannot add " << p_type << " device" << std::endl;
