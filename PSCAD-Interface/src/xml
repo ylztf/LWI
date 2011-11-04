@@ -1,35 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SSTCount>3</SSTCount>
+<SSTCount>2</SSTCount>
 <state>
   <entry index = "1">
     <device>pv1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry> 
-  <entry index = "2">
-    <device>battery1</device>
+<entry index = "2">
+    <device>load1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry>
   <entry index = "3">
-    <device>load1</device>
+    <device>battery1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry>
   <entry index = "4">
+    <device>dg1</device>
+    <key>powerLevel</key>
+    <parent>1</parent>
+  </entry>
+  <entry index = "5">
+    <device>pv2</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry> 
+  <entry index = "6">
     <device>load2</device>
     <key>powerLevel</key>
     <parent>2</parent>
   </entry>
-  <entry index = "5">
-    <device>pv3</device>
-    <key>currentLevel</key>
-    <parent>3</parent>
+  <entry index = "7">
+    <device>battery2</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry>
+<entry index = "8">
+    <device>dg2</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
   </entry>
 </state>
 <command>
   <entry index = "1">
-    <device>pv1</device>
+    <device>load1</device>
     <key>onOffSwitch</key>
     <parent>1</parent>
   </entry>
@@ -39,7 +54,7 @@
     <parent>1</parent>
   </entry>
   <entry index = "3">
-    <device>load1</device>
+    <device>dg1</device>
     <key>onOffSwitch</key>
     <parent>1</parent>
   </entry>
@@ -54,8 +69,8 @@
     <parent>2</parent>
   </entry>
   <entry index = "6">
-    <device>dieselGenerator3</device>
+    <device>dg2</device>
     <key>onOffSwitch</key>
-    <parent>3</parent>
+    <parent>2</parent>
   </entry>
 </command>
