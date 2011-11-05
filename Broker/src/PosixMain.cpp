@@ -266,7 +266,7 @@ int main (int argc, char* argv[])
          m_phyManager.GetDevice("grid1")->turnOn();
          double linkPower1 = m_phyManager.GetDevice("grid1")->get_powerLevel();
 
-         m_phyManager.GetDevice("dg1")->turnOff();
+         m_phyManager.GetDevice("dg1")->turnOn();
          double dgPower1 = m_phyManager.GetDevice("dg1")->get_powerLevel();
 
 
