@@ -63,7 +63,7 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		void CGridLinkDevice::turnOn()
 		{
-			CPSCADDevice::Set("onOffSwitch", 1);
+			CPSCADDevice::Set("onOffSwitch", 0);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		void CGridLinkDevice::turnOff()
 		{
-			CPSCADDevice::Set("onOffSwitch", 0);
+			CPSCADDevice::Set("onOffSwitch", 1);
 		}
 
 	} // namespace broker
