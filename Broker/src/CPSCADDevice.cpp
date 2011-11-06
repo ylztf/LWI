@@ -56,8 +56,12 @@ namespace freedm {
         ///////////////////////////////////////////////////////////////////////////////
         CPSCADDevice::SettingValue CPSCADDevice::Get(SettingKey key)
         {
+            std::cout<<"CPSCAD get is called "<<m_devid<<" "<<key<<std::endl;
             std::string response = m_lineClient->Get(m_devid, key);
-            return boost::lexical_cast<double>(response);
+            std::cout<<"response is "<<response<<std::endl;
+            double anumber =  boost::lexical_cast<double>(response);
+            std::cout<< "anumber is "<<anumber<<std::endl;
+            return anumber;
         };
 
         ///////////////////////////////////////////////////////////////////////////////

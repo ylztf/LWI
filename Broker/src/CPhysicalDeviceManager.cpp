@@ -86,13 +86,16 @@ void CPhysicalDeviceManager::RemoveDevice(IPhysicalDevice::Identifier devid)
 IPhysicalDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
     IPhysicalDevice::Identifier devid)
 {
+    std::cout<<"device id is "<<devid<<std::endl;
     iterator di = m_devices.find(devid);
     if(di != m_devices.end())
     {
+        std::cout<<"found? "<<(di->second)->GetID()<<std::endl;
         return di->second;
     }
     else
     {
+        std::cout<<"NULL?  "<<std::endl;
         return IPhysicalDevice::DevicePtr();
     }
 }

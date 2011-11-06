@@ -31,7 +31,7 @@ if(Boost_FOUND)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
-    set(COMMON_FLAGS "")
+    set(COMMON_FLAGS "-g")
 
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)

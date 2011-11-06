@@ -54,7 +54,8 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		CBatteryDevice:: SettingValue CBatteryDevice::get_powerLevel()
 		{
-			CPSCADDevice::Get("powerLevel");
+            std::cout<<"CBatteryDevice get powerLevel is called "<<m_devid<<std::endl;
+			return CPSCADDevice::Get("powerLevel");
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
