@@ -2,6 +2,7 @@
 /// @file         LoadBalance.cpp
 ///
 /// @author       Ravi Akella <rcaq5c@mst.edu>
+///               Yaxi Liu <ylztf@mst.edu>
 ///
 /// @compiler     C++
 ///
@@ -138,33 +139,7 @@ void lbAgent::LoadManage()
     Logger::Debug<< "Device ID: " << DevPtr->GetID() << ", Device Type: " 
     		 << DevPtr->GetType()<< ", power level: " << DevPtr->get_powerLevel() << std::endl;                         
   }  
-  /*
-  step++;
-  std::stringstream ss_;
-  ss_.clear();
-  ss_<<"simulation.step"<<step;
-  boost::property_tree::ptree pt;
-  boost::property_tree::read_xml("lb/loads.xml",pt);   
-
-    BOOST_FOREACH(ptree::value_type & child, pt.get_child(ss_.str()))
-    {
-        freedm::broker::IPhysicalDevice::Identifier devid = child.second.get<std::string>("<xmlattr>.id");
-        int type = child.second.get<int>("type"); 
-        if(type == freedm::broker::physicaldevices::DRER){           
-        m_phyDevManager.GetDevice(devid)->Set("vout", child.second.get<float>("vout"));    
-        }
-        else if(type == freedm::broker::physicaldevices::DESD){ 
-        m_phyDevManager.GetDevice(devid)->Set("vin", child.second.get<float>("vin")); 
-        m_phyDevManager.GetDevice(devid)->Set("vout", child.second.get<float>("vout"));      
-        }
-        else if(type == freedm::broker::physicaldevices::LOAD){ 
-        m_phyDevManager.GetDevice(devid)->Set("vin", child.second.get<float>("vin"));   
-        }
-        else{
-         Logger::Debug<< "Attempt to set FREEDM GENERIC DEVICE " << std::endl;
-        }
-    }
-  */    
+  
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
@@ -415,9 +390,9 @@ void lbAgent::LoadTable(){
   std::cout <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
 
   //temp variable to compute net generation from DRERs, storage from DESDs and LOADs
-  float net_gen = 0;
-  float net_storage = 0;
-  float net_load = 0;
+  double net_gen = 0;
+  double net_storage = 0;
+  double net_load = 0;
   
   //# devices of each type attached and alive 
   int DRER_count = 0;
@@ -431,30 +406,52 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
       //Compute Net Generation
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
          (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
-	{ //********need to make these work**************      	
+	  {       	
 	  net_gen += it_->second->get_powerLevel();   
+      std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_gen<<"!!!!!!!!!!!!!!"<<std::endl;
 	 DRER_count++;          
       }  
       //Compute Net Storage
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::DESD))
       {       	
-	net_storage += it_->second->get_powerLevel();       
+	net_storage += it_->second->get_powerLevel(); 
+    std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_storage<<"!!!!!!!!!!!!!!"<<std::endl;      
 	 DESD_count++;      
       } 
       //Compute Net Load
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::LOAD))
       {       	
-	net_load += it_->second->get_powerLevel();     
+	net_load += it_->second->get_powerLevel();  
+    std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_load<<"!!!!!!!!!!!!!!"<<std::endl;   
 	 LOAD_count++;        
       }  
     }
 
-  P_Gen = net_gen;
-  B_Soc = net_storage;
-  P_Load = net_load;
-  P_Gateway = P_Load - P_Gen;
+
+        double pv = m_phyDevManager.GetDevice("pv1")->get_powerLevel();
+        std::cout<<"see pv is "<<pv<<std::endl;
+        
+        double battery = m_phyDevManager.GetDevice("battery1")->get_powerLevel();
+        std::cout<<"see battery is "<<battery<<std::endl;
+       
+        double load = m_phyDevManager.GetDevice("load1")->get_powerLevel();
+        std::cout<<"see load is "<<load<<std::endl;
+         
+         double link = m_phyDevManager.GetDevice("grid1")->get_powerLevel();
+          std::cout<<"see link is "<<link<<std::endl;
+         
+         double dg = m_phyDevManager.GetDevice("dg1")->get_powerLevel();
+         std::cout<<"see dg is "<<dg<<std::endl;
+
+
+
+
+ P_Gen = (float)net_gen;
+ B_Soc = (float)net_storage;
+ P_Load = (float)net_load;
+ P_Gateway = float(P_Load - P_Gen);
   std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
   std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
