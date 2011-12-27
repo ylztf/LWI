@@ -254,22 +254,21 @@ int main (int argc, char* argv[])
         factory.CreateDevice( "grid", "grid1" );
         factory.CreateDevice( "dg", "dg1");
 
-        //quick test
-        double pvPowe1r = m_phyManager.GetDevice("pv1")->get_powerLevel();
+        //intialize devices  
+        //PV is always set to on by PSCAD
 
+        //battery should always be on initially
         m_phyManager.GetDevice("battery1")->turnOn();
-        double batteryPower1 = m_phyManager.GetDevice("battery1")->get_powerLevel();
-
+       
+        //ac load should always be on initially
         m_phyManager.GetDevice("load1")->turnOn();
-        double loadPower1 = m_phyManager.GetDevice("load1")->get_powerLevel();
 
-         m_phyManager.GetDevice("grid1")->turnOn();
-         double linkPower1 = m_phyManager.GetDevice("grid1")->get_powerLevel();
-
-         m_phyManager.GetDevice("dg1")->turnOn();
-         double dgPower1 = m_phyManager.GetDevice("dg1")->get_powerLevel();
-
-
+        //grid tie should be always be off initially
+        m_phyManager.GetDevice("grid1")->turnOff();
+        
+        //diesel generator should always be off initially
+        m_phyManager.GetDevice("dg1")->turnOff();
+ 
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;
 

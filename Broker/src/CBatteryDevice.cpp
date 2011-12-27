@@ -54,7 +54,6 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		CBatteryDevice:: SettingValue CBatteryDevice::get_powerLevel()
 		{
-            std::cout<<"CBatteryDevice get powerLevel is called "<<m_devid<<std::endl;
 			return CPSCADDevice::Get("powerLevel");
 		}
 
@@ -64,7 +63,7 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		void CBatteryDevice::turnOn()
 		{
-			CPSCADDevice::Set("onOffSwitch", 1);
+			CPSCADDevice::Set("onOffSwitch", 0);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
@@ -73,7 +72,7 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		void CBatteryDevice::turnOff()
 		{
-			CPSCADDevice::Set("onOffSwitch", 0);
+			CPSCADDevice::Set("onOffSwitch", 1);
 		}
 
     } // namespace broker

@@ -97,6 +97,7 @@ lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
   PeerNodePtr self_(this);
   InsertInPeerSet(l_AllPeers, self_);
   step = 0;
+  preLoad = LPeerNode::NORM;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,8 +144,9 @@ void lbAgent::LoadManage()
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
-  // On Load change from Normal to Demand, broadcast the change
-  if (LPeerNode::NORM == preLoad && LPeerNode::DEMAND == l_Status)
+  // On Load change to Demand, broadcast the change
+  //old code broadcast only when state change from norm to demand
+  if (LPeerNode::DEMAND == l_Status)
   {
       // Create Demand message and send it to all nodes
     freedm::broker::CMessage m_;
@@ -178,8 +180,8 @@ void lbAgent::LoadManage()
     }//end foreach
   }//endif
 
-   //On load change from Demand to Normal, broadcast the change
-  else if (LPeerNode::DEMAND == preLoad && LPeerNode::NORM == l_Status)
+   //On load change from Normal, broadcast the change
+  else if (LPeerNode::NORM != preLoad && LPeerNode::NORM == l_Status)
   {   
     freedm::broker::CMessage m_;  
     std::stringstream ss_;
@@ -275,14 +277,12 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 /////////////////////////////////////////////////////////
 
 void lbAgent::SendDraftRequest(){
+
+    std::cout<<"%%%%%%%thing 1 Sending draft Request.%%%%%%%%%%"<<std::endl;
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
   if(LPeerNode::SUPPLY == l_Status)
     {
-      if(m_HiNodes.empty())
-	Logger::Notice << "No known Demand nodes at the moment" <<std::endl;      
-      else
-      {
-        //Create new request and send it to all DEMAND nodes   
+        //Create new request and send it to all nodes   
       	freedm::broker::CMessage m_;
       	std::stringstream ss_;
       	ss_.clear();
@@ -294,7 +294,7 @@ void lbAgent::SendDraftRequest(){
       	m_.m_submessages.put("lb", ss_.str());
         Logger::Notice << "\nSending DraftRequest from: " << 
         	m_.m_submessages.get<std::string>("lb.source") <<std::endl;
-        foreach( PeerNodePtr peer_, m_HiNodes | boost::adaptors::map_values)
+        foreach( PeerNodePtr peer_, l_AllPeers | boost::adaptors::map_values)
     	{
 	  if( peer_->GetUUID() == GetUUID())
 	     continue;
@@ -310,12 +310,12 @@ void lbAgent::SendDraftRequest(){
            }
          }
         }//end foreach
-      }//end else	     
+     	     
     }//end if
 }//end SendDraftRequest
 
 ////////////////////////////////////////////////////////////
-/// InitiatePowerMigration *************need to change for LWI*********
+/// InitiatePowerMigration 
 /// @description Initiates 'power migration' on Draft Accept
 ///              message from a demand node    
 /// @pre: Current load state of this node is 'Supply'
@@ -325,54 +325,11 @@ void lbAgent::SendDraftRequest(){
 ///		 in use to charge DESDs
 /////////////////////////////////////////////////////////
 void lbAgent::InitiatePowerMigration(float DemandValue){
-
-     freedm::broker::IPhysicalDevice::DevicePtr DevPtr;
-     freedm::broker::CPhysicalDeviceManager::PhysicalDeviceSet::iterator it_;
-     // Make a map of DESDs
-     std::map<float, freedm::broker::IPhysicalDevice::Identifier> DESDMap;
-     float V_in, V_out; // Temp variables to hold "vin" and "vout"
-
-     //Sort the DESDs by decreasing order of their "vin"s; achieved by inserting into map
-     for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
-     {
-       if ((m_phyDevManager.DeviceExists(it_->first)) && 
-          (it_->second->GetType() == freedm::broker::physicaldevices::DESD))    
-       {       	
-	 DESDMap.insert(std::pair<float, freedm::broker::IPhysicalDevice::Identifier>
-			(it_->second->get_powerLevel(), it_->first));             
-       }    
-     } 
-     //Use a reverse iterator on map to retrieve elements in reverse sorted order   
-     std::map<float, freedm::broker::IPhysicalDevice::Identifier >::reverse_iterator mapIt_; 
-      float temp_ = DemandValue; // temp variable to hold the P_migrate set by Demanding node
-
-     for( mapIt_ = DESDMap.rbegin(); mapIt_ != DESDMap.rend(); ++mapIt_ )
-     {
-       V_in = mapIt_->first; //load "vin" from the DESDmap
-       
-       // Using the below if-else structure, what we are doing is as follows:
-       // Use the DESD that has highest input from DRERs and reduce this input;
-       // The key assumption here is that the SST (PSCAD Model) will figure out
-       // the way to route this surplus on to the grid
-       // Next use the DESD with next highest input and so on till net demand
-       // (P_migrate) is satisfied
-       if(temp_ <= V_in)
-       {  
-         V_in = V_in - temp_;
-         //Then set the V_in accordingly on that particular device	
-         //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in);               
-       }
-       else 
-       {
-         temp_ = temp_ - V_in;
-         V_in = 0;
-         //Then set the vin and vout accordingly on that particular device	
-         //m_phyDevManager.GetDevice(mapIt_->second)->Set("vin", V_in); 
-       }  
-     }//end for
-     
-     // Clear the DRER map
-     DESDMap.clear();
+    std::cout<<"************************************"<<std::endl;
+    std::cout<<"*                                  *"<<std::endl;
+    std::cout<<"*      Power Migrate now.          *"<<std::endl;
+    std::cout<<"************************************"<<std::endl;
+    m_phyDevManager.GetDevice("grid1")->turnOn();//set power to flow to main grid
 }
 
 ////////////////////////////////////////////////////////////
@@ -408,50 +365,29 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
          (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
 	  {       	
 	  net_gen += it_->second->get_powerLevel();   
-      std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_gen<<"!!!!!!!!!!!!!!"<<std::endl;
 	 DRER_count++;          
       }  
       //Compute Net Storage
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::DESD))
       {       	
-	net_storage += it_->second->get_powerLevel(); 
-    std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_storage<<"!!!!!!!!!!!!!!"<<std::endl;      
+	net_storage += it_->second->get_powerLevel();      
 	 DESD_count++;      
       } 
       //Compute Net Load
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::LOAD))
       {       	
-	net_load += it_->second->get_powerLevel();  
-    std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_load<<"!!!!!!!!!!!!!!"<<std::endl;   
+	net_load += it_->second->get_powerLevel();   
 	 LOAD_count++;        
       }  
     }
 
-
-        double pv = m_phyDevManager.GetDevice("pv1")->get_powerLevel();
-        std::cout<<"see pv is "<<pv<<std::endl;
-        
-        double battery = m_phyDevManager.GetDevice("battery1")->get_powerLevel();
-        std::cout<<"see battery is "<<battery<<std::endl;
-       
-        double load = m_phyDevManager.GetDevice("load1")->get_powerLevel();
-        std::cout<<"see load is "<<load<<std::endl;
-         
-         double link = m_phyDevManager.GetDevice("grid1")->get_powerLevel();
-          std::cout<<"see link is "<<link<<std::endl;
-         
-         double dg = m_phyDevManager.GetDevice("dg1")->get_powerLevel();
-         std::cout<<"see dg is "<<dg<<std::endl;
-
-
-
-
- P_Gen = (float)net_gen;
- B_Soc = (float)net_storage;
- P_Load = (float)net_load;
- P_Gateway = float(P_Load - P_Gen);
+//unit set to kw
+ P_Gen = (float)(net_gen * 1000);
+ B_Soc = (float)(net_storage * 1000);
+ P_Load = (float)(net_load * 1000);
+ P_Gateway = (float)(P_Load - P_Gen);
   std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
   std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
@@ -462,9 +398,15 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
 
   //Compute the Load state based on the current gateway value
   //TODO: This should be computed based on a normalized value obtained thru State Collection
-  if(P_Gateway <= 0)      l_Status = LPeerNode::SUPPLY;
-  else if(P_Gateway > 1)  {l_Status = LPeerNode::DEMAND; DemandValue = 1-P_Gateway;}
-  else 		  	  l_Status = LPeerNode::NORM;
+  if(P_Gen > P_Load)   {
+    l_Status = LPeerNode::SUPPLY;
+  }
+  else if(P_Load > P_Gen)  {
+           l_Status = LPeerNode::DEMAND; 
+           DemandValue = P_Load - P_Gen;
+       }
+       else
+ 	       l_Status = LPeerNode::NORM;
 
   //Update information about this node in the load table based on above computation
   //foreach( PeerNodePtr self_, l_AllPeers )
@@ -493,15 +435,20 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
  //Print the load information you have about the rest of the system  
  foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
     {
-      std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Grp Member" <<std::setw(6) <<"|"<<std::endl;
-      if (CountInPeerSet(m_HiNodes,p_) > 0 )
-        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
-      else if (CountInPeerSet(m_NoNodes,p_) > 0 )
-        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Normal" <<std::setw(6) <<"|"<<std::endl;
-      else if (CountInPeerSet(m_LoNodes,p_) > 0 )
-        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Supply" <<std::setw(6) <<"|"<<std::endl;
-      else
-        std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "------" <<std::setw(6) <<"|"<<std::endl;
+        if (CountInPeerSet(m_HiNodes,p_) > 0 ){
+            std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
+            std::cout <<"| ---------------------------------------------------- |" <<std::endl;
+        }
+        else if (CountInPeerSet(m_NoNodes,p_) > 0 ) {
+            std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Normal" <<std::setw(6) <<"|"<<std::endl;
+            std::cout <<"| ---------------------------------------------------- |" <<std::endl;
+        }
+        else if (CountInPeerSet(m_LoNodes,p_) > 0 ) {
+            std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Supply" <<std::setw(6) <<"|"<<std::endl;
+            std::cout <<"| ---------------------------------------------------- |" <<std::endl;
+        }
+        else
+            std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "------" <<std::setw(6) <<"|"<<std::endl;
     }
   std::cout <<" ------------------------------------------------------" <<std::endl;
   return;
@@ -639,6 +586,7 @@ void lbAgent::HandleRead(const ptree& pt )
       ss_.clear();
       ss_.str("yes");
       m_.m_submessages.put("lb", ss_.str());
+      //std::cout<<"accepting draft"<<std::endl;
     }
 
     // Otherwise, inform the source that you are not interested
@@ -649,8 +597,16 @@ void lbAgent::HandleRead(const ptree& pt )
       ss_.str("no");
       m_.m_submessages.put("lb", ss_.str());
     }
-
-    
+    //if you are also in SUPPLY state, 
+    //check if dg is on.  If it is on, check battery state of charge.
+    //if it is higher than a threshhold, turn dg off and turn off link to main grid
+    //otherwise do nothing
+    //right now, since we can't check battery, will simply turn dg off.
+    if(LPeerNode::SUPPLY == l_Status) {
+        m_phyDevManager.GetDevice("dg1")->turnOff();//turn diesel generator off
+        m_phyDevManager.GetDevice("battery1")->turnOn();//turn battery back on
+        m_phyDevManager.GetDevice("grid1")->turnOff();//cut power flow to main grid
+    }
     // Send your response         
     if( peer_->GetUUID() != GetUUID())
     {
@@ -674,6 +630,19 @@ void lbAgent::HandleRead(const ptree& pt )
     EraseInPeerSet(m_NoNodes,peer_);
     EraseInPeerSet(m_LoNodes,peer_);
     InsertInPeerSet(m_HiNodes,peer_);
+
+    //if you are also in demand state, calculate how long the battery will last.
+    //if it's less than a threshhod, connect to main grid and turn on dieseal
+    //since we don't know how to check battery yet, so simply turn dg on now.
+    if(LPeerNode::DEMAND == l_Status){
+        m_phyDevManager.GetDevice("grid1")->turnOn();//set power to flow to main grid
+    std::cout<<"************************************"<<std::endl;
+    std::cout<<"*                                  *"<<std::endl;
+    std::cout<<"*      Power Migrate now.          *"<<std::endl;
+    std::cout<<"************************************"<<std::endl;
+        m_phyDevManager.GetDevice("dg1")->turnOn();//set power to flow to main grid
+        m_phyDevManager.GetDevice("battery1")->turnOff();//set power to flow to main grid
+    }
   }//end if("demand")
 
   // You received a Load change of source to Normal state
@@ -755,7 +724,8 @@ void lbAgent::HandleRead(const ptree& pt )
      ss_.clear();
      ss_ << DemandValue;
      m_.m_submessages.put("lb.value", ss_.str());
-
+     
+     std::cout<<"accepting "<<DemandValue<<std::endl;
      if( peer_->GetUUID() != GetUUID() && LPeerNode::DEMAND == l_Status )
      {
        try
@@ -767,13 +737,7 @@ void lbAgent::HandleRead(const ptree& pt )
   	 Logger::Info << "Couldn't Send Message To Peer" << std::endl;
        }
 
-      // Make necessary power setting accordingly to allow power migration
-      //TODO: Set "Gateway" at the SST as below or control physical devices?
-      //TODO: Changes significantly depending on SST's control capability; 
-      //for now, the demand node doesn`t have to make any setting
-      //P_Star = P_Gateway + P_Migrate; //instead of 1
-      //m_phyDevManager.GetDevice("sst")->Set("P*", P_Star);     
-      //Logger::Notice<<" Obtaining power from: "<< peer_->GetUUID() << std::endl;
+       InitiatePowerMigration(1);
      }
      else
      {

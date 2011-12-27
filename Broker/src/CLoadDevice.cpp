@@ -62,7 +62,7 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		void CLoadDevice::turnOn()
 		{
-			CPSCADDevice::Set("onOffSwitch", 1);
+			CPSCADDevice::Set("onOffSwitch", 0);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ namespace freedm {
 		///////////////////////////////////////////////////////////////////////////////
 		void CLoadDevice::turnOff()
 		{
-			CPSCADDevice::Set("onOffSwitch", 0);
+			CPSCADDevice::Set("onOffSwitch", 1);
 		}
 
     } // namespace broker

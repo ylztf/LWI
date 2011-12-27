@@ -329,20 +329,20 @@ freedm::broker::CMessage GMAgent::PeerList()
 	ss_.clear();
 	ss_ << GetUUID();
 	ss_ >> m_.m_srcUUID;
-	//m_.m_submessages.put("lb.source", ss_.str());
-	//m_.m_submessages.put("lb", "peerList");
-	m_.m_submessages.put("sc.source", ss_.str());
-	m_.m_submessages.put("sc", "peerList");
+	m_.m_submessages.put("lb.source", ss_.str());
+	m_.m_submessages.put("lb", "peerList");
+	//m_.m_submessages.put("sc.source", ss_.str());
+	//m_.m_submessages.put("sc", "peerList");
 	ss_.clear();
 	foreach( PeerNodePtr peer_, m_UpNodes | boost::adaptors::map_values)
   {
 		ss_ << ",";
 		ss_ << peer_->GetUUID();
 	}
-	//m_.m_submessages.put("lb.peers", ss_.str());
-	//Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("lb.peers") << std::endl;
-	m_.m_submessages.put("sc.peers", ss_.str());
-	Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("sc.peers") << std::endl;
+	m_.m_submessages.put("lb.peers", ss_.str());
+	Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("lb.peers") << std::endl;
+	//m_.m_submessages.put("sc.peers", ss_.str());
+	//Logger::Debug << "Group List contains: " << m_.m_submessages.get<std::string>("sc.peers") << std::endl;
   return m_;
 }
 ///////////////////////////////////////////////////////////////////////////////
