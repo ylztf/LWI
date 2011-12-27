@@ -36,6 +36,9 @@ CDeviceTable::CDeviceTable( const std::string & p_xml, const std::string & p_tag
     
     m_length    = m_structure.GetSize();
     m_data      = new double[m_length];
+    //initialize all data to 0. Command table will further be initiated in CSimulationServer.cpp
+    for (int index = 0; index < m_length; index ++)
+      m_data[index] = 0;
 }
 
 double CDeviceTable::GetValue( const CDeviceKey & p_dkey, size_t p_index )

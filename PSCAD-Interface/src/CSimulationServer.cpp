@@ -85,6 +85,22 @@ void CSimulationServer::Stop()
 
 void CSimulationServer::Run()
 {
+    //hard code command table's initial state.  Will let xml handle this later
+
+    //power to main grid would initially be disconnected (breaker engaged)
+    m_command.m_data[0] = 1;
+    m_command.m_data[4] = 1;
+
+    //diesel generator would initially be OFF
+    m_command.m_data[3] = 1;
+    m_command.m_data[7] = 1;
+
+    //load and battery would initilally be ON
+    m_command.m_data[1] = 0;
+    m_command.m_data[2] = 0;
+    m_command.m_data[5] = 0;
+    m_command.m_data[6] = 0;
+    
     Logger::Info << __PRETTY_FUNCTION__ << std::endl;
     
     boost::array<char,HEADER_SIZE> header;

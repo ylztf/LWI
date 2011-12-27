@@ -1,74 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SSTCount>2</SSTCount>
 <state>
-  <entry index = "1">
+<entry index = "1">
+    <device>grid1</device>
+    <key>powerLevel</key>
+    <parent>1</parent>
+  </entry> 
+  <entry index = "2">
     <device>pv1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry> 
-<entry index = "2">
+<entry index = "3">
     <device>load1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry>
-  <entry index = "3">
+  <entry index = "4">
     <device>battery1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry>
-  <entry index = "4">
+  <entry index = "5">
     <device>dg1</device>
     <key>powerLevel</key>
     <parent>1</parent>
   </entry>
-  <entry index = "5">
+<entry index = "6">
+    <device>grid2</device>
+    <key>powerLevel</key>
+    <parent>2</parent>
+  </entry> 
+  <entry index = "7">
     <device>pv2</device>
     <key>powerLevel</key>
     <parent>2</parent>
   </entry> 
-  <entry index = "6">
+  <entry index = "8">
     <device>load2</device>
     <key>powerLevel</key>
     <parent>2</parent>
   </entry>
-  <entry index = "7">
+  <entry index = "9">
     <device>battery2</device>
     <key>powerLevel</key>
     <parent>2</parent>
   </entry>
-<entry index = "8">
+<entry index = "10">
     <device>dg2</device>
     <key>powerLevel</key>
     <parent>2</parent>
   </entry>
 </state>
 <command>
-  <entry index = "1">
-    <device>load1</device>
+ <entry index = "1">
+    <device>grid1</device>
     <key>onOffSwitch</key>
     <parent>1</parent>
   </entry>
   <entry index = "2">
-    <device>battery1</device>
+    <device>load1</device>
     <key>onOffSwitch</key>
     <parent>1</parent>
   </entry>
   <entry index = "3">
-    <device>dg1</device>
+    <device>battery1</device>
     <key>onOffSwitch</key>
     <parent>1</parent>
   </entry>
   <entry index = "4">
-    <device>load2</device>
+    <device>dg1</device>
     <key>onOffSwitch</key>
-    <parent>2</parent>
+    <parent>1</parent>
   </entry>
-  <entry index = "5">
-    <device>battery2</device>
+ <entry index = "5">
+    <device>grid2</device>
     <key>onOffSwitch</key>
     <parent>2</parent>
   </entry>
   <entry index = "6">
+    <device>load2</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "7">
+    <device>battery2</device>
+    <key>onOffSwitch</key>
+    <parent>2</parent>
+  </entry>
+  <entry index = "8">
     <device>dg2</device>
     <key>onOffSwitch</key>
     <parent>2</parent>
