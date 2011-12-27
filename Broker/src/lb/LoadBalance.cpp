@@ -365,29 +365,32 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
          (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
 	  {       	
 	  net_gen += it_->second->get_powerLevel();   
+      std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_gen<<"!!!!!!!!!!!!!!"<<std::endl;
 	 DRER_count++;          
       }  
       //Compute Net Storage
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::DESD))
-      {       	
-	net_storage += it_->second->get_powerLevel();      
-	 DESD_count++;      
+      {        
+          net_storage += it_->second->get_powerLevel();     
+          DESD_count++;      
       } 
       //Compute Net Load
       if ((m_phyDevManager.DeviceExists(it_->first)) && 
 	 (it_->second->GetType() == freedm::broker::physicaldevices::LOAD))
       {       	
-	net_load += it_->second->get_powerLevel();   
-	 LOAD_count++;        
+          net_load += it_->second->get_powerLevel();   
+          LOAD_count++;        
       }  
     }
+
 
 //unit set to kw
  P_Gen = (float)(net_gen * 1000);
  B_Soc = (float)(net_storage * 1000);
  P_Load = (float)(net_load * 1000);
  P_Gateway = (float)(P_Load - P_Gen);
+
   std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
   std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
