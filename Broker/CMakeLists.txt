@@ -13,7 +13,7 @@ option(BUILD_TESTS "Enable the building and running of unit tests." OFF)
 option(SHOW_WARNINGS "warnings displayed during project compile" OFF)
 option(CUSTOMNETWORK "for network.xml support" OFF)
 option(DATAGRAM "for UDP Datagram service w/o sequencing" OFF)
-option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" OFF)
+option(USE_DEVICE_PSCAD "Enable the PSCAD simulation interface" ON)
 option(SHOW_MESSAGES "Enable help messages during cmake execution" ON)
 
 if(SHOW_MESSAGES)
@@ -31,7 +31,7 @@ if(Boost_FOUND)
     link_directories(${Boost_LIBRARY_DIRS})
 
     # set C++ compiler flags
-    set(COMMON_FLAGS "")
+    set(COMMON_FLAGS "-g")
 
     set(WARNING_FLAGS "")
     if(SHOW_WARNINGS)

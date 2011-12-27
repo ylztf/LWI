@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file CBatteryDevice.cpp
+/// @file CDieselGeneratorDevice.cpp
 ///
 /// @author Yaxi Liu <ylztf@mst.edu>
 ///
@@ -30,52 +30,52 @@
 /// Technology, Rolla, MO 65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CBatteryDevice.hpp"
+#include "CDieselGeneratorDevice.hpp"
 
 namespace freedm {
 	namespace broker {
 
 		///////////////////////////////////////////////////////////////////////////////
-		/// @fn CBatteryDevice
-		/// @brief  constructor. The device type is always DESD (distributed energy storage device).
+		/// @fn CDIESELGENERATORDEVICE
+		/// @brief  construcctor for the diesel generator.
+        ///         Its type is always DG.
 		/// @param phymanager The related physical device manager.
 		/// @param deviceid The identifier for this generic device.
 		/// @param lineClient  the client that connects to the PSCAD interface
 		///////////////////////////////////////////////////////////////////////////////
-		CBatteryDevice::CBatteryDevice(CLineClient::TPointer lineClient, CPhysicalDeviceManager& phymanager, IPhysicalDevice::Identifier deviceid)  
-			: CPSCADDevice(lineClient, phymanager, deviceid, physicaldevices::DESD)
+		CDieselGeneratorDevice::CDieselGeneratorDevice(CLineClient::TPointer lineClient, CPhysicalDeviceManager& phymanager, IPhysicalDevice::Identifier deviceid)  
+			: CPSCADDevice(lineClient, phymanager, deviceid, physicaldevices::DG)
 		{};
 
 		/////////////////////////////////////////////////////////////////////////////
 		/// @fn GET_POWERLEVEL
-		/// @brief get the power level of the battery.  
-		/// @return  the power level read from PSCAD simulation.  Positive numbers mean
-		///          the battery is discharging. Negative powers mean the battery is charging.
+		/// @brief get the generated power level of the diesel generator
+		/// @return  the generated power level read from PSCAD simulation
 		///////////////////////////////////////////////////////////////////////////////
-		CBatteryDevice:: SettingValue CBatteryDevice::get_powerLevel()
+		CDieselGeneratorDevice:: SettingValue CDieselGeneratorDevice::get_powerLevel()
 		{
 			return CPSCADDevice::Get("powerLevel");
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
-		/// @fn turnOn
-		/// @brief turn battery on
+		/// @fn TURNON
+		/// @brief turn diesel generator on
 		///////////////////////////////////////////////////////////////////////////////
-		void CBatteryDevice::turnOn()
+		void CDieselGeneratorDevice::turnOn()
 		{
 			CPSCADDevice::Set("onOffSwitch", 0);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
-		/// @fn turnOff
-		/// @brief turn battery off
+		/// @fn TURNOFF
+		/// @brief turn diesel generator off
 		///////////////////////////////////////////////////////////////////////////////
-		void CBatteryDevice::turnOff()
+		void CDieselGeneratorDevice::turnOff()
 		{
 			CPSCADDevice::Set("onOffSwitch", 1);
 		}
 
-    } // namespace broker
+	} // namespace broker
 } // namespace freedm
 
 

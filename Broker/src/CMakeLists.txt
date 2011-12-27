@@ -16,6 +16,8 @@ set(
     CPVDevice.cpp
     CBatteryDevice.cpp
     CLoadDevice.cpp
+    CGridLinkDevice.cpp
+    CDieselGeneratorDevice.cpp
     gm/GroupManagement.cpp
     lb/LoadBalance.cpp
     #lb/LBPeerNode.cpp

@@ -47,6 +47,8 @@
 #include "CPVDevice.hpp"
 #include "CLoadDevice.hpp"
 #include "CBatteryDevice.hpp"
+#include "CGridLinkDevice.hpp"
+#include "CDieselGeneratorDevice.hpp"
 
 CREATE_EXTERN_STD_LOGS()
 

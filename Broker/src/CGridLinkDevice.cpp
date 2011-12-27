@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-/// @file CBatteryDevice.cpp
+/// @file CGridLinkDevice.cpp
 ///
 /// @author Yaxi Liu <ylztf@mst.edu>
 ///
@@ -30,52 +30,52 @@
 /// Technology, Rolla, MO 65409 (ff@mst.edu).
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "CBatteryDevice.hpp"
+#include "CGridLinkDevice.hpp"
 
 namespace freedm {
 	namespace broker {
 
 		///////////////////////////////////////////////////////////////////////////////
-		/// @fn CBatteryDevice
-		/// @brief  constructor. The device type is always DESD (distributed energy storage device).
+		/// @fn CGridLinkDevice
+		/// @brief  construcctor for the AC power line connecting a PMCU to the main grid.
+        ///         Its type is always GRID.
 		/// @param phymanager The related physical device manager.
 		/// @param deviceid The identifier for this generic device.
 		/// @param lineClient  the client that connects to the PSCAD interface
 		///////////////////////////////////////////////////////////////////////////////
-		CBatteryDevice::CBatteryDevice(CLineClient::TPointer lineClient, CPhysicalDeviceManager& phymanager, IPhysicalDevice::Identifier deviceid)  
-			: CPSCADDevice(lineClient, phymanager, deviceid, physicaldevices::DESD)
+		CGridLinkDevice::CGridLinkDevice(CLineClient::TPointer lineClient, CPhysicalDeviceManager& phymanager, IPhysicalDevice::Identifier deviceid)  
+			: CPSCADDevice(lineClient, phymanager, deviceid, physicaldevices::GRID)
 		{};
 
 		/////////////////////////////////////////////////////////////////////////////
 		/// @fn GET_POWERLEVEL
-		/// @brief get the power level of the battery.  
-		/// @return  the power level read from PSCAD simulation.  Positive numbers mean
-		///          the battery is discharging. Negative powers mean the battery is charging.
+		/// @brief get the generated power level of the power line 
+		/// @return  the generated power level read from PSCAD simulation
 		///////////////////////////////////////////////////////////////////////////////
-		CBatteryDevice:: SettingValue CBatteryDevice::get_powerLevel()
+		CGridLinkDevice:: SettingValue CGridLinkDevice::get_powerLevel()
 		{
 			return CPSCADDevice::Get("powerLevel");
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
 		/// @fn turnOn
-		/// @brief turn battery on
+		/// @brief turn the breaker on the powerline off, so power flows
 		///////////////////////////////////////////////////////////////////////////////
-		void CBatteryDevice::turnOn()
+		void CGridLinkDevice::turnOn()
 		{
 			CPSCADDevice::Set("onOffSwitch", 0);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
 		/// @fn turnOff
-		/// @brief turn battery off
+		/// @brief turn the breaker on the power line on, so power stops flowing
 		///////////////////////////////////////////////////////////////////////////////
-		void CBatteryDevice::turnOff()
+		void CGridLinkDevice::turnOff()
 		{
 			CPSCADDevice::Set("onOffSwitch", 1);
 		}
 
-    } // namespace broker
+	} // namespace broker
 } // namespace freedm
 
 
