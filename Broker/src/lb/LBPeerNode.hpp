@@ -65,7 +65,14 @@ class LPeerNode : public IPeerNode {
             boost::asio::io_service& ios,
             freedm::broker::CDispatcher& dispatch) :
                 IPeerNode(uuid,connmgr,ios,dispatch) {};
-      enum EStatus{ SUPPLY, NORM, DEMAND };
+  enum EStatus{ SUPPLY, 
+		NORM,
+		DEMAND, 
+		RECVR_FED,  //getting power from others, its load met 
+		RECVR_HUNGRY, //getting power from others, still not enough
+                DONOR_FED,  //giving power to others, is still self sufficient
+		DONOR_HUNGRY //giving power to others, not self sufficient anymore
+  };
 
   protected:
         //friend class lbAgent;

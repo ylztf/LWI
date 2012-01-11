@@ -124,7 +124,7 @@ int main (int argc, char* argv[])
             ("lineclient-host,l", po::value<std::string>(&interHost)->
              default_value(""),"Hostname to use for the lineclient to connect.")
             ("lineclient-port,q", po::value<std::string>(&interPort)->
-             default_value("4001"),"The port to use for the lineclient to connect.")
+             default_value("4003"),"The port to use for the lineclient to connect.")
             ("verbose,v", po::value<int>(&verbose_)->
              implicit_value(5)->default_value(3),
              "enable verbose output (optionally specify level)");
@@ -248,26 +248,26 @@ int main (int argc, char* argv[])
             m_phyManager, m_ios, interHost, interPort );
 
         // Create Devices
-        factory.CreateDevice( "solar", "pv1" );
-        factory.CreateDevice( "battery", "battery1" );
-        factory.CreateDevice( "load", "load1" );
-        factory.CreateDevice( "grid", "grid1" );
-        factory.CreateDevice( "dg", "dg1");
+        factory.CreateDevice( "solar", "pv3" );
+        factory.CreateDevice( "battery", "battery3" );
+        factory.CreateDevice( "load", "load3" );
+        factory.CreateDevice( "grid", "grid3" );
+        factory.CreateDevice( "dg", "dg3");
 
         //intialize devices  
         //PV is always set to on by PSCAD
 
         //battery should always be on initially
-        m_phyManager.GetDevice("battery1")->turnOn();
+        m_phyManager.GetDevice("battery3")->turnOn();
        
         //ac load should always be on initially
-        m_phyManager.GetDevice("load1")->turnOn();
+        m_phyManager.GetDevice("load3")->turnOn();
 
         //grid tie should be always be off initially
-        m_phyManager.GetDevice("grid1")->turnOff();
+        m_phyManager.GetDevice("grid3")->turnOff();
         
         //diesel generator should always be off initially
-        m_phyManager.GetDevice("dg1")->turnOff();
+        m_phyManager.GetDevice("dg3")->turnOff();
  
         // Instantiate Dispatcher for message delivery 
         freedm::broker::CDispatcher dispatch_;

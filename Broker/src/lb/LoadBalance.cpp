@@ -144,9 +144,9 @@ void lbAgent::LoadManage()
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
-  // On Load change to Demand, broadcast the change
+  // If state is DEMAND or RECVR_HUNGRY, broadcast
   //old code broadcast only when state change from norm to demand
-  if (LPeerNode::DEMAND == l_Status)
+  if ( (LPeerNode::DEMAND == l_Status) || (LPeerNode::RECVR_HUNGRY == l_Status) )
   {
       // Create Demand message and send it to all nodes
     freedm::broker::CMessage m_;
@@ -213,8 +213,8 @@ void lbAgent::LoadManage()
      }
     }//end elseif
 
-  // If your are in Supply state
-  else if (LPeerNode::SUPPLY == l_Status)
+  // If your are in Supply state or DONOR_FED state
+  else if ( (LPeerNode::SUPPLY == l_Status) || (LPeerNode::DONOR_FED == l_Status) )
   {
     SendDraftRequest(); //initiate draft request
   }
@@ -269,16 +269,12 @@ void lbAgent::LoadManage( const boost::system::error_code& err )
 ///				Software Engineering, 1985
 /// @pre: Current load state of this node is 'Supply'
 /// @post: Change load to Normal after migrating load, on timer
-/// @return Send "request" message to first node among demand peers list
-/// @limitations Currently broadcasts request to all the entries in the list of
-///		 demand nodes and starts to supply to the first demand node. 
-///              Ideally, it should compute draft standard to select the demand
-///		 node to supply.
+/// @return Send "request" message to all peers
+/// @limitations Currently broadcasts request to all the entries in the list of nodes
 /////////////////////////////////////////////////////////
 
 void lbAgent::SendDraftRequest(){
 
-    std::cout<<"%%%%%%%thing 1 Sending draft Request.%%%%%%%%%%"<<std::endl;
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;  
   if(LPeerNode::SUPPLY == l_Status)
     {
@@ -329,7 +325,7 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
     std::cout<<"*                                  *"<<std::endl;
     std::cout<<"*      Power Migrate now.          *"<<std::endl;
     std::cout<<"************************************"<<std::endl;
-    m_phyDevManager.GetDevice("grid1")->turnOn();//set power to flow to main grid
+    m_phyDevManager.GetDevice("grid3")->turnOn();//set power to flow to main grid
 }
 
 ////////////////////////////////////////////////////////////
@@ -365,7 +361,6 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
          (it_->second->GetType() == freedm::broker::physicaldevices::DRER))
 	  {       	
 	  net_gen += it_->second->get_powerLevel();   
-      std::cout<<"!!!!!!!!!!!!!!!!!!"<<net_gen<<"!!!!!!!!!!!!!!"<<std::endl;
 	 DRER_count++;          
       }  
       //Compute Net Storage
@@ -399,20 +394,40 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
   std::cout <<"| " << std::setw(20) << "UUID" << std::setw(27)<< "State" << std::setw(7) <<"|"<< std::endl;
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
-  //Compute the Load state based on the current gateway value
-  //TODO: This should be computed based on a normalized value obtained thru State Collection
+  float netMigration = m_phyDevManager.GetDevice("grid3")->get_powerLevel();
+  
   if(P_Gen > P_Load)   {
     l_Status = LPeerNode::SUPPLY;
   }
   else if(P_Load > P_Gen)  {
-           l_Status = LPeerNode::DEMAND; 
-           DemandValue = P_Load - P_Gen;
-       }
-       else
- 	       l_Status = LPeerNode::NORM;
-
+    l_Status = LPeerNode::DEMAND; 
+    DemandValue = P_Load - P_Gen;
+  }
+  else
+    l_Status = LPeerNode::NORM;
+ 
+  if (netMigration > 0){
+    //you are donating power to others now
+    if(P_Gen - netMigration > P_Load)   {
+      l_Status = LPeerNode::DONOR_FED;
+    }
+    else if(P_Load >= P_Gen - netMigration)  {
+      l_Status = LPeerNode::DONOR_HUNGRY; 
+    }
+  }
+  if ( netMigration < 0){
+    //you are receiving power from others now
+    if(P_Gen - netMigration > P_Load)   {
+      l_Status = LPeerNode::RECVR_FED;
+    }
+    else if(P_Load >= P_Gen - netMigration)  {
+      l_Status = LPeerNode::RECVR_HUNGRY; 
+    }
+  }
+  
   //Update information about this node in the load table based on above computation
   //foreach( PeerNodePtr self_, l_AllPeers )
+  //need to figure out how the new states needs to be reflected here.
   foreach( PeerNodePtr self_, l_AllPeers | boost::adaptors::map_values)
   {
     if( self_->GetUUID() == GetUUID())
@@ -519,7 +534,7 @@ void lbAgent::HandleRead(const ptree& pt )
       Logger::Notice << "\nPeer List < " << peers_ <<
 	           " > received from Group Leader: " << line_ <<std::endl;
 
-      //Update the PeerNode lists accordingly            
+      //Update the PeerNode lists accordingly, may need update to reflect newly added states            
 
       foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
       {
@@ -583,8 +598,8 @@ void lbAgent::HandleRead(const ptree& pt )
     ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("lb.source", ss_.str());   
 
-    // If you are in Demand State, accept the request with a 'yes' 
-    if(LPeerNode::DEMAND == l_Status)
+    // If you are in Demand or RECVR_HUNGRY State, accept the request with a 'yes' 
+    if( (LPeerNode::DEMAND == l_Status) || (LPeerNode::RECVR_HUNGRY == l_Status))
     {
       ss_.clear();
       ss_.str("yes");
@@ -600,16 +615,7 @@ void lbAgent::HandleRead(const ptree& pt )
       ss_.str("no");
       m_.m_submessages.put("lb", ss_.str());
     }
-    //if you are also in SUPPLY state, 
-    //check if dg is on.  If it is on, check battery state of charge.
-    //if it is higher than a threshhold, turn dg off and turn off link to main grid
-    //otherwise do nothing
-    //right now, since we can't check battery, will simply turn dg off.
-    if(LPeerNode::SUPPLY == l_Status) {
-        m_phyDevManager.GetDevice("dg1")->turnOff();//turn diesel generator off
-        m_phyDevManager.GetDevice("battery1")->turnOn();//turn battery back on
-        m_phyDevManager.GetDevice("grid1")->turnOff();//cut power flow to main grid
-    }
+ 
     // Send your response         
     if( peer_->GetUUID() != GetUUID())
     {
@@ -633,19 +639,7 @@ void lbAgent::HandleRead(const ptree& pt )
     EraseInPeerSet(m_NoNodes,peer_);
     EraseInPeerSet(m_LoNodes,peer_);
     InsertInPeerSet(m_HiNodes,peer_);
-
-    //if you are also in demand state, calculate how long the battery will last.
-    //if it's less than a threshhod, connect to main grid and turn on dieseal
-    //since we don't know how to check battery yet, so simply turn dg on now.
-    if(LPeerNode::DEMAND == l_Status){
-        m_phyDevManager.GetDevice("grid1")->turnOn();//set power to flow to main grid
-    std::cout<<"************************************"<<std::endl;
-    std::cout<<"*                                  *"<<std::endl;
-    std::cout<<"*      Power Migrate now.          *"<<std::endl;
-    std::cout<<"************************************"<<std::endl;
-        m_phyDevManager.GetDevice("dg1")->turnOn();//set power to flow to main grid
-        m_phyDevManager.GetDevice("battery1")->turnOff();//set power to flow to main grid
-    }
+   
   }//end if("demand")
 
   // You received a Load change of source to Normal state
@@ -659,6 +653,7 @@ void lbAgent::HandleRead(const ptree& pt )
     InsertInPeerSet(m_NoNodes,peer_);
   }//end if("normal")
 
+   /*
  // You received a message saying the source is in Supply state, which means 
  // you are (were, recently) in Demand state; else you would not have received it
  else if(pt.get<std::string>("lb") == "supply"  && peer_->GetUUID() != GetUUID())
@@ -670,6 +665,7 @@ void lbAgent::HandleRead(const ptree& pt )
    EraseInPeerSet(m_NoNodes,peer_);
    InsertInPeerSet(m_LoNodes,peer_);
  }//end if("supply")
+   */
 
   // You received a response from source, to your draft request
   else if(((pt.get<std::string>("lb") == "yes") || 
@@ -689,7 +685,7 @@ void lbAgent::HandleRead(const ptree& pt )
       ss_.str("drafting");
       m_.m_submessages.put("lb", ss_.str());
       //Its better to check the status again before initiating drafting
-      if( peer_->GetUUID() != GetUUID() && LPeerNode::SUPPLY == l_Status )
+      if( peer_->GetUUID() != GetUUID() && (LPeerNode::SUPPLY == l_Status) ||(LPeerNode::DONOR_FED == l_Status))
       {
         try
         {
@@ -714,7 +710,7 @@ void lbAgent::HandleRead(const ptree& pt )
  else if(pt.get<std::string>("lb") == "drafting" && peer_->GetUUID() != GetUUID())
  {
    Logger::Notice << "\nDrafting message received from: " << peer_->GetUUID() << std::endl;   
-   if(LPeerNode::DEMAND == l_Status)
+   if( (LPeerNode::DEMAND == l_Status) || (LPeerNode::RECVR_HUNGRY == l_Status) )
    {
      freedm::broker::CMessage m_;
      std::stringstream ss_;
@@ -728,8 +724,7 @@ void lbAgent::HandleRead(const ptree& pt )
      ss_ << DemandValue;
      m_.m_submessages.put("lb.value", ss_.str());
      
-     std::cout<<"accepting "<<DemandValue<<std::endl;
-     if( peer_->GetUUID() != GetUUID() && LPeerNode::DEMAND == l_Status )
+     if( peer_->GetUUID() != GetUUID() )
      {
        try
        {
@@ -739,7 +734,7 @@ void lbAgent::HandleRead(const ptree& pt )
        {
   	 Logger::Info << "Couldn't Send Message To Peer" << std::endl;
        }
-
+       //Then connect to the main grid to get power
        InitiatePowerMigration(1);
      }
      else
@@ -753,20 +748,21 @@ void lbAgent::HandleRead(const ptree& pt )
  else if(pt.get<std::string>("lb") == "accept" && peer_->GetUUID() != GetUUID())
  {
    //On acceptance of remote host to involve in drafting, this node
-   //changes to NORM from SUPPLY
+   //changes to NORM from SUPPLY -- Ravi is preventing double dipping here.  But
+   //LWI could.
    float DemValue;
    std::stringstream ss_;
    ss_ << pt.get<std::string>("lb.value");
    ss_ >> DemValue;
    Logger::Notice << " Draft Accept message received from: "
 		  << peer_->GetUUID()<< "with demand of "<<DemValue << std::endl;	     
-   if( LPeerNode::SUPPLY == l_Status)
+   if( (LPeerNode::SUPPLY == l_Status) || (LPeerNode::DONOR_FED == l_Status) )
    {
    // Make necessary power setting accordingly to allow power migration
       Logger::Notice<<"\nMigrating power on request from: "<< peer_->GetUUID() << std::endl;
       InitiatePowerMigration(DemValue);
             
-   }//end if( LPeerNode::SUPPLY == l_Status)
+   }
      
    else
    {
@@ -776,6 +772,7 @@ void lbAgent::HandleRead(const ptree& pt )
 
  // "load" message is sent by the State Collection module of the source 
  // (local or remote). Respond to it by sending in your current load status
+   //This does not reflect the new states.
  else if(pt.get<std::string>("lb") == "load")
  {
    peer_ = get_peer(line_);
