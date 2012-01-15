@@ -89,7 +89,6 @@ IPhysicalDevice::DevicePtr CPhysicalDeviceManager::GetDevice(
     iterator di = m_devices.find(devid);
     if(di != m_devices.end())
     {
-        std::cout<<"found? "<<(di->second)->GetID()<<std::endl;
         return di->second;
     }
     else

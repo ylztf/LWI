@@ -413,19 +413,23 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
   float netMigration = m_phyDevManager.GetDevice("grid3")->get_powerLevel();
+  //round near zero numbers to 0.
+  if (netMigration > 0)
+    netMigration = floor(netMigration *1000)/1000;
+  else
+    netMigration = ceil(netMigration *1000)/1000;
+  std::cout<<"NET migration IS "<<netMigration<<std::endl;
   
-  if (netMigration == 0) {
-    if(P_Gen > P_Load)   {
-      l_Status = LPeerNode::SUPPLY;
-    }
-    else if(P_Load > P_Gen)  {
-      l_Status = LPeerNode::DEMAND; 
-      DemandValue = P_Load - P_Gen;
-    }
-    else
-      l_Status = LPeerNode::NORM;
+  if(P_Gen > P_Load)   {
+    l_Status = LPeerNode::SUPPLY;
   }
-
+  else if(P_Load > P_Gen)  {
+    l_Status = LPeerNode::DEMAND; 
+    DemandValue = P_Load - P_Gen;
+  }
+  else
+    l_Status = LPeerNode::NORM;
+  
   if (netMigration > 0){
     //you are donating power to others now
     if(P_Gen - netMigration > P_Load)   {
