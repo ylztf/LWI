@@ -68,10 +68,12 @@ class LPeerNode : public IPeerNode {
   enum EStatus{ SUPPLY, 
 		NORM,
 		DEMAND, 
+		/* the rest are for future use
 		RECVR_FED,  //getting power from others, its load met 
 		RECVR_HUNGRY, //getting power from others, still not enough
                 DONOR_FED,  //giving power to others, is still self sufficient
 		DONOR_HUNGRY //giving power to others, not self sufficient anymore
+		*/
   };
 
   protected:

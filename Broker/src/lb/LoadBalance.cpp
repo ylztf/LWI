@@ -146,7 +146,7 @@ void lbAgent::LoadManage()
      
   // If state is DEMAND or RECVR_HUNGRY, broadcast
   //old code broadcast only when state change from norm to demand
-  if ( (LPeerNode::DEMAND == l_Status) || (LPeerNode::RECVR_HUNGRY == l_Status) )
+  if ( LPeerNode::DEMAND == l_Status )
   {
       // Create Demand message and send it to all nodes
     freedm::broker::CMessage m_;
@@ -213,8 +213,8 @@ void lbAgent::LoadManage()
      }
     }//end elseif
 
-  // If your are in Supply state or DONOR_FED state
-  else if ( (LPeerNode::SUPPLY == l_Status) || (LPeerNode::DONOR_FED == l_Status) )
+  // If your are in Supply state 
+  else if (LPeerNode::SUPPLY == l_Status)
   {
     SendDraftRequest(); //initiate draft request
   }
@@ -330,7 +330,24 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
 
 ////////////////////////////////////////////////////////////
 /// LoadTable
-/// @description  prints load table
+/// @description:  prints load table
+///  if netMigration == 0 (most likely grid connection is off)
+///     if generation == load
+///        set state to NORMAL
+///     if generation < load
+///        set state to DEMAND
+///     if generation > load
+///        set state to SUPPLY
+///  if netMigration < 0 (is receiving power from peer)
+///     if generation - gridPower >= load
+///        set state to NORMAL
+///     if generation - gridPower < load
+///        set state to DEMAND
+///  if netMigration >  0 (is donating power to peer)
+///     if generation - gridPower > load
+///        set state to SUPPLY
+///     if generation - gridPower <= load
+///        set state to NORMAL
 /// @pre: All the peers should be connected
 /// @post: Printed load values should be current and consistent
 /// @return Load table and computes Load state
@@ -386,6 +403,7 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
  P_Load = (float)(net_load * 1000);
  P_Gateway = (float)(P_Load - P_Gen);
 
+ //print Load Table frame and column headers
   std::cout <<"| " << "Net DRER (" << DRER_count << "): " << P_Gen << std::setw(14) 
 	    << "Net DESD (" << DESD_count << "): " << B_Soc << std::endl;
   std::cout <<"| " << "Net Load (" << LOAD_count << "): "<< P_Load << std::setw(14)
@@ -396,32 +414,34 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
 
   float netMigration = m_phyDevManager.GetDevice("grid3")->get_powerLevel();
   
-  if(P_Gen > P_Load)   {
-    l_Status = LPeerNode::SUPPLY;
+  if (netMigration == 0) {
+    if(P_Gen > P_Load)   {
+      l_Status = LPeerNode::SUPPLY;
+    }
+    else if(P_Load > P_Gen)  {
+      l_Status = LPeerNode::DEMAND; 
+      DemandValue = P_Load - P_Gen;
+    }
+    else
+      l_Status = LPeerNode::NORM;
   }
-  else if(P_Load > P_Gen)  {
-    l_Status = LPeerNode::DEMAND; 
-    DemandValue = P_Load - P_Gen;
-  }
-  else
-    l_Status = LPeerNode::NORM;
- 
+
   if (netMigration > 0){
     //you are donating power to others now
     if(P_Gen - netMigration > P_Load)   {
-      l_Status = LPeerNode::DONOR_FED;
+      l_Status = LPeerNode::SUPPLY;
     }
     else if(P_Load >= P_Gen - netMigration)  {
-      l_Status = LPeerNode::DONOR_HUNGRY; 
+      l_Status = LPeerNode::NORM; 
     }
   }
   if ( netMigration < 0){
     //you are receiving power from others now
-    if(P_Gen - netMigration > P_Load)   {
-      l_Status = LPeerNode::RECVR_FED;
+    if(P_Gen - netMigration >= P_Load)   {
+      l_Status = LPeerNode::NORM;
     }
-    else if(P_Load >= P_Gen - netMigration)  {
-      l_Status = LPeerNode::RECVR_HUNGRY; 
+    else if(P_Load > P_Gen - netMigration)  {
+      l_Status = LPeerNode::DEMAND; 
     }
   }
   
@@ -598,8 +618,8 @@ void lbAgent::HandleRead(const ptree& pt )
     ss_ >> m_.m_srcUUID;
     m_.m_submessages.put("lb.source", ss_.str());   
 
-    // If you are in Demand or RECVR_HUNGRY State, accept the request with a 'yes' 
-    if( (LPeerNode::DEMAND == l_Status) || (LPeerNode::RECVR_HUNGRY == l_Status))
+    // If you are in Demand, accept the request with a 'yes' 
+    if( LPeerNode::DEMAND == l_Status )
     {
       ss_.clear();
       ss_.str("yes");
@@ -685,7 +705,7 @@ void lbAgent::HandleRead(const ptree& pt )
       ss_.str("drafting");
       m_.m_submessages.put("lb", ss_.str());
       //Its better to check the status again before initiating drafting
-      if( peer_->GetUUID() != GetUUID() && (LPeerNode::SUPPLY == l_Status) ||(LPeerNode::DONOR_FED == l_Status))
+      if( (peer_->GetUUID() != GetUUID()) && (LPeerNode::SUPPLY == l_Status))
       {
         try
         {
@@ -710,7 +730,7 @@ void lbAgent::HandleRead(const ptree& pt )
  else if(pt.get<std::string>("lb") == "drafting" && peer_->GetUUID() != GetUUID())
  {
    Logger::Notice << "\nDrafting message received from: " << peer_->GetUUID() << std::endl;   
-   if( (LPeerNode::DEMAND == l_Status) || (LPeerNode::RECVR_HUNGRY == l_Status) )
+   if( LPeerNode::DEMAND == l_Status )
    {
      freedm::broker::CMessage m_;
      std::stringstream ss_;
@@ -756,7 +776,7 @@ void lbAgent::HandleRead(const ptree& pt )
    ss_ >> DemValue;
    Logger::Notice << " Draft Accept message received from: "
 		  << peer_->GetUUID()<< "with demand of "<<DemValue << std::endl;	     
-   if( (LPeerNode::SUPPLY == l_Status) || (LPeerNode::DONOR_FED == l_Status) )
+   if( LPeerNode::SUPPLY == l_Status )
    {
    // Make necessary power setting accordingly to allow power migration
       Logger::Notice<<"\nMigrating power on request from: "<< peer_->GetUUID() << std::endl;
