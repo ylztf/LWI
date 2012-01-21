@@ -144,8 +144,7 @@ void lbAgent::LoadManage()
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
-  // If state is DEMAND or RECVR_HUNGRY, broadcast
-  //old code broadcast only when state change from norm to demand
+  // If state is DEMAND, broadcast
   if ( LPeerNode::DEMAND == l_Status )
   {
       // Create Demand message and send it to all nodes
@@ -558,7 +557,7 @@ void lbAgent::HandleRead(const ptree& pt )
       Logger::Notice << "\nPeer List < " << peers_ <<
 	           " > received from Group Leader: " << line_ <<std::endl;
 
-      //Update the PeerNode lists accordingly, may need update to reflect newly added states            
+      //Update the PeerNode lists accordingly         
 
       foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
       {
@@ -654,7 +653,7 @@ void lbAgent::HandleRead(const ptree& pt )
     }
   }//end if("request")
 
-  // You received a Demand message from the source 
+  // You received a Demand message from the source. Update list and do nothing. 
   else if(pt.get<std::string>("lb") == "demand"  && peer_->GetUUID() != GetUUID())
   {
     Logger::Notice << "\nDemand message received from: " 
@@ -676,20 +675,6 @@ void lbAgent::HandleRead(const ptree& pt )
     EraseInPeerSet(m_LoNodes,peer_);
     InsertInPeerSet(m_NoNodes,peer_);
   }//end if("normal")
-
-   /*
- // You received a message saying the source is in Supply state, which means 
- // you are (were, recently) in Demand state; else you would not have received it
- else if(pt.get<std::string>("lb") == "supply"  && peer_->GetUUID() != GetUUID())
- {
-   Logger::Notice << "\nSupply message received from: " 
-                  << pt.get<std::string>("lb.source") <<std::endl;
-   EraseInPeerSet(m_LoNodes,peer_);
-   EraseInPeerSet(m_HiNodes,peer_);
-   EraseInPeerSet(m_NoNodes,peer_);
-   InsertInPeerSet(m_LoNodes,peer_);
- }//end if("supply")
-   */
 
   // You received a response from source, to your draft request
   else if(((pt.get<std::string>("lb") == "yes") || 
@@ -771,9 +756,8 @@ void lbAgent::HandleRead(const ptree& pt )
  // The Demand node you agreed to supply power to, is awaiting migration
  else if(pt.get<std::string>("lb") == "accept" && peer_->GetUUID() != GetUUID())
  {
-   //On acceptance of remote host to involve in drafting, this node
-   //changes to NORM from SUPPLY -- Ravi is preventing double dipping here.  But
-   //LWI could.
+   //Ravi would change status from supply to norm once the node is giving power to others
+   //to prevent double dipping.  LWI changes this.  LWI allows giving power to more nodes.
    float DemValue;
    std::stringstream ss_;
    ss_ << pt.get<std::string>("lb.value");
@@ -784,8 +768,7 @@ void lbAgent::HandleRead(const ptree& pt )
    {
    // Make necessary power setting accordingly to allow power migration
       Logger::Notice<<"\nMigrating power on request from: "<< peer_->GetUUID() << std::endl;
-      InitiatePowerMigration(DemValue);
-            
+      InitiatePowerMigration(DemValue);            
    }
      
    else
@@ -796,7 +779,6 @@ void lbAgent::HandleRead(const ptree& pt )
 
  // "load" message is sent by the State Collection module of the source 
  // (local or remote). Respond to it by sending in your current load status
-   //This does not reflect the new states.
  else if(pt.get<std::string>("lb") == "load")
  {
    peer_ = get_peer(line_);
