@@ -96,8 +96,10 @@ lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
   Logger::Debug << __PRETTY_FUNCTION__ << std::endl;
   PeerNodePtr self_(this);
   InsertInPeerSet(l_AllPeers, self_);
-  step = 0;
+  demandDuration = 0; //count how many times in a row has been in DEMAND state 
   preLoad = LPeerNode::NORM;
+  dgOn = false;
+  gridtieOn = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,44 +146,54 @@ void lbAgent::LoadManage()
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
      
-  // If state is DEMAND, broadcast
+  // If state is DEMAND
   if ( LPeerNode::DEMAND == l_Status )
   {
+    demandDuration++; //if demandDuration reaches 5, need to turn on diesel generator
+    if (demandDuration == 5) {
+      m_phyDevManager.GetDevice("dg3")->turnOn();
+      dgOn = true;
+      //change state to supply
+      l_Status = LPeerNode::SUPPLY;
+      demandDuration = 0;
+    }
+    else {
       // Create Demand message and send it to all nodes
-    freedm::broker::CMessage m_;
-    std::stringstream ss_;
-    ss_.clear();
-    ss_ << GetUUID();
-    ss_ >> m_.m_srcUUID;
-    m_.m_submessages.put("lb.source", ss_.str());
-    ss_.clear();
-    ss_.str("demand");
-    m_.m_submessages.put("lb", ss_.str());
-    
-        
+      freedm::broker::CMessage m_;
+      std::stringstream ss_;
+      ss_.clear();
+      ss_ << GetUUID();
+      ss_ >> m_.m_srcUUID;
+      m_.m_submessages.put("lb.source", ss_.str());
+      ss_.clear();
+      ss_.str("demand");
+      m_.m_submessages.put("lb", ss_.str());
+      
+      
     //Send Demand message to all nodes
-    Logger::Notice <<"Broadcasting Load change: NORM -> DEMAND " <<std::endl;
-     foreach( PeerNodePtr peer_, l_AllPeers | boost::adaptors::map_values)
-    {
-      if( peer_->GetUUID() == GetUUID())      
-	  continue;  
-      else
-      {    	 
-	try
-  	{
+      Logger::Notice <<"Broadcasting Load change: NORM -> DEMAND " <<std::endl;
+      foreach( PeerNodePtr peer_, l_AllPeers | boost::adaptors::map_values)
+	{
+	  if( peer_->GetUUID() == GetUUID())      
+	    continue;  
+	  else
+	    {    	 
+	      try
+		{
    	  peer_->Send(m_);
-  	}
-  	catch (boost::system::system_error& e)
-  	{
-    	  Logger::Info << "Couldn't Send Message To Peer" << std::endl;
-   	}
-      }
-    }//end foreach
-  }//endif
-
+		}
+	      catch (boost::system::system_error& e)
+		{
+		  Logger::Info << "Couldn't Send Message To Peer" << std::endl;
+		}
+	    }
+	}//end foreach
+    }//endif demandDuration < 5
+  }
    //On load change from Normal, broadcast the change
   else if (LPeerNode::NORM != preLoad && LPeerNode::NORM == l_Status)
   {   
+    demandDuration = 0; //reset step
     freedm::broker::CMessage m_;  
     std::stringstream ss_;
     ss_ << GetUUID();
@@ -215,14 +227,15 @@ void lbAgent::LoadManage()
   // If your are in Supply state 
   else if (LPeerNode::SUPPLY == l_Status)
   {
+    demandDuration = 0; //reset demandDuration
     SendDraftRequest(); //initiate draft request
   }
 
   // If you are in Normal state
   else if (LPeerNode::NORM == l_Status)
   {
-   // Do nothing (atleast for now )
-   }
+    demandDuration = 0; //reset demandDuration
+  }
 
   //Start the timer; on timeout, this function is called again 
   m_GlobalTimer.expires_from_now( boost::posix_time::seconds(LOAD_TIMEOUT) );
@@ -325,6 +338,7 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
     std::cout<<"*      Power Migrate now.          *"<<std::endl;
     std::cout<<"************************************"<<std::endl;
     m_phyDevManager.GetDevice("grid3")->turnOn();//set power to flow to main grid
+    gridtieOn = true;
 }
 
 ////////////////////////////////////////////////////////////
@@ -362,6 +376,7 @@ void lbAgent::LoadTable(){
   double net_gen = 0;
   double net_storage = 0;
   double net_load = 0;
+  double net_dg = 0;
   
   //# devices of each type attached and alive 
   int DRER_count = 0;
@@ -393,6 +408,15 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
           net_load += it_->second->get_powerLevel();   
           LOAD_count++;        
       }  
+
+      //Compute net diesel generation
+      if ((m_phyDevManager.DeviceExists(it_->first)) && 
+	 (it_->second->GetType() == freedm::broker::physicaldevices::DG))
+      {       	
+          net_dg += it_->second->get_powerLevel();   
+          LOAD_count++;        
+      }  
+
     }
 
 
@@ -400,6 +424,7 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
  P_Gen = (float)(net_gen * 1000);
  B_Soc = (float)(net_storage * 1000);
  P_Load = (float)(net_load * 1000);
+ P_Dg = (float)(net_dg * 1000);
  P_Gateway = (float)(P_Load - P_Gen);
 
  //print Load Table frame and column headers
@@ -412,13 +437,11 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
   std::cout <<"| "<< std::setw(20) << "----" << std::setw(27)<< "-----" << std::setw(7) <<"|"<< std::endl;
 
   float netMigration = m_phyDevManager.GetDevice("grid3")->get_powerLevel();
-  //round near zero numbers to 0.
-  if (netMigration > 0)
-    netMigration = floor(netMigration *1000)/1000;
-  else
-    netMigration = ceil(netMigration *1000)/1000;
-  std::cout<<"NET migration IS "<<netMigration<<std::endl;
-  
+ 
+  std::cout<<"NET migration IS "<<netMigration * 1000 <<std::endl;
+
+  std::cout<<"NET DG IS "<<net_dg * 1000 <<std::endl;
+
   if(P_Gen > P_Load)   {
     l_Status = LPeerNode::SUPPLY;
   }
@@ -428,26 +451,34 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
   }
   else
     l_Status = LPeerNode::NORM;
-  
-  if (netMigration > 0){
-    //you are donating power to others now
-    if(P_Gen - netMigration > P_Load)   {
-      l_Status = LPeerNode::SUPPLY;
+
+  if (gridtieOn) {
+    if (netMigration > 0){
+      //you are donating power to others now
+      if(P_Gen - netMigration > P_Load)   {
+	l_Status = LPeerNode::SUPPLY;
+      }
+      else if(P_Load >= P_Gen - netMigration)  {
+	l_Status = LPeerNode::NORM; 
+      }
     }
-    else if(P_Load >= P_Gen - netMigration)  {
-      l_Status = LPeerNode::NORM; 
+    if ( netMigration < 0){
+      //you are receiving power from others now
+      if(P_Gen - netMigration >= P_Load)   {
+	l_Status = LPeerNode::NORM;
+      }
+      else if(P_Load > P_Gen - netMigration)  {
+	l_Status = LPeerNode::DEMAND; 
+      }
     }
   }
-  if ( netMigration < 0){
-    //you are receiving power from others now
-    if(P_Gen - netMigration >= P_Load)   {
-      l_Status = LPeerNode::NORM;
-    }
-    else if(P_Load > P_Gen - netMigration)  {
-      l_Status = LPeerNode::DEMAND; 
-    }
-  }
   
+  //if your diesel generator is on, you are in supply mode
+  //currrently we assume one diesel can always support all three PMCUs
+  if (dgOn) {
+    l_Status = LPeerNode::SUPPLY;
+  }
+
   //Update information about this node in the load table based on above computation
   //foreach( PeerNodePtr self_, l_AllPeers )
   //need to figure out how the new states needs to be reflected here.

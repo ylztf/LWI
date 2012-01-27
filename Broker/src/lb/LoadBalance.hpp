@@ -87,13 +87,13 @@ class lbAgent
   public:
         lbAgent();
 	lbAgent(std::string uuid_, 
-	  boost::asio::io_service &ios, 
-	  freedm::broker::CDispatcher &p_dispatch, 
-	  freedm::broker::CConnectionManager &m_conManager, 
-	  freedm::broker::CPhysicalDeviceManager &m_phyManager);
-	  lbAgent( const lbAgent& );
-	  lbAgent& operator = ( const lbAgent& );
-          virtual ~lbAgent();   
+	boost::asio::io_service &ios, 
+	freedm::broker::CDispatcher &p_dispatch, 
+	freedm::broker::CConnectionManager &m_conManager, 
+	freedm::broker::CPhysicalDeviceManager &m_phyManager);
+	lbAgent( const lbAgent& );
+	lbAgent& operator = ( const lbAgent& );
+        virtual ~lbAgent();   
                     
 	// Internal
 	void SendDraftRequest();
@@ -108,7 +108,6 @@ class lbAgent
 
 	// This is the main loop of the algorithm
         int	LB();
-        int step;
  
   private: 
         
@@ -123,6 +122,12 @@ class lbAgent
 
 	/* IO and Timers */
 	deadline_timer		m_GlobalTimer;
+
+        // count how many times in a row it has been in DEMAND state 
+        int demandDuration; 
+
+        bool dgOn;
+        bool gridtieOn;
 };
 }
 
