@@ -123,6 +123,7 @@ class lbAgent
 
 	/* IO and Timers */
 	deadline_timer		m_GlobalTimer;
+  int demandCount;
 };
 }
 

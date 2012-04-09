@@ -98,6 +98,7 @@ lbAgent::lbAgent(std::string uuid_, boost::asio::io_service &ios,
   InsertInPeerSet(l_AllPeers, self_);
   step = 0;
   preLoad = LPeerNode::NORM;
+  demandCount=0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,7 +144,10 @@ void lbAgent::LoadManage()
   
   // Call LoadTable to update load state of the system as observed by this node
   LoadTable();
-     
+  //if all 3 are in demand state, you know thing1 will turn on dg
+  if(demandCount == 3) {
+    m_phyDevManager.GetDevice("grid3")->turnOn();//set power to flow to main grid
+  }
   // On Load change to Demand, broadcast the change
   //old code broadcast only when state change from norm to demand
   if (LPeerNode::DEMAND == l_Status)
@@ -329,7 +333,7 @@ void lbAgent::InitiatePowerMigration(float DemandValue){
     std::cout<<"*                                  *"<<std::endl;
     std::cout<<"*      Power Migrate now.          *"<<std::endl;
     std::cout<<"************************************"<<std::endl;
-    m_phyDevManager.GetDevice("grid1")->turnOn();//set power to flow to main grid
+    m_phyDevManager.GetDevice("grid3")->turnOn();//set power to flow to main grid
 }
 
 ////////////////////////////////////////////////////////////
@@ -346,6 +350,7 @@ void lbAgent::LoadTable(){
   std::cout <<"\n ----------- LOAD TABLE (Power Management) ------------" << std::endl;
   std::cout <<"| " << " @ " << microsec_clock::local_time()  <<std::endl;
 
+  demandCount = 0;
   //temp variable to compute net generation from DRERs, storage from DESDs and LOADs
   double net_gen = 0;
   double net_storage = 0;
@@ -408,8 +413,8 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
            l_Status = LPeerNode::DEMAND; 
            DemandValue = P_Load - P_Gen;
        }
-       else
- 	       l_Status = LPeerNode::NORM;
+  else
+    l_Status = LPeerNode::NORM;
 
   //Update information about this node in the load table based on above computation
   //foreach( PeerNodePtr self_, l_AllPeers )
@@ -439,6 +444,7 @@ for( it_ = m_phyDevManager.begin(); it_ != m_phyDevManager.end(); ++it_ )
  foreach( PeerNodePtr p_, l_AllPeers | boost::adaptors::map_values)
     {
         if (CountInPeerSet(m_HiNodes,p_) > 0 ){
+	  demandCount++;
             std::cout<<"| " << p_->GetUUID() << std::setw(12)<< "Demand" <<std::setw(6) <<"|"<<std::endl;
             std::cout <<"| ---------------------------------------------------- |" <<std::endl;
         }
@@ -600,16 +606,7 @@ void lbAgent::HandleRead(const ptree& pt )
       ss_.str("no");
       m_.m_submessages.put("lb", ss_.str());
     }
-    //if you are also in SUPPLY state, 
-    //check if dg is on.  If it is on, check battery state of charge.
-    //if it is higher than a threshhold, turn dg off and turn off link to main grid
-    //otherwise do nothing
-    //right now, since we can't check battery, will simply turn dg off.
-    if(LPeerNode::SUPPLY == l_Status) {
-        m_phyDevManager.GetDevice("dg1")->turnOff();//turn diesel generator off
-        m_phyDevManager.GetDevice("battery1")->turnOn();//turn battery back on
-        m_phyDevManager.GetDevice("grid1")->turnOff();//cut power flow to main grid
-    }
+   
     // Send your response         
     if( peer_->GetUUID() != GetUUID())
     {
@@ -634,18 +631,6 @@ void lbAgent::HandleRead(const ptree& pt )
     EraseInPeerSet(m_LoNodes,peer_);
     InsertInPeerSet(m_HiNodes,peer_);
 
-    //if you are also in demand state, calculate how long the battery will last.
-    //if it's less than a threshhod, connect to main grid and turn on dieseal
-    //since we don't know how to check battery yet, so simply turn dg on now.
-    if(LPeerNode::DEMAND == l_Status){
-        m_phyDevManager.GetDevice("grid1")->turnOn();//set power to flow to main grid
-    std::cout<<"************************************"<<std::endl;
-    std::cout<<"*                                  *"<<std::endl;
-    std::cout<<"*      Power Migrate now.          *"<<std::endl;
-    std::cout<<"************************************"<<std::endl;
-        m_phyDevManager.GetDevice("dg1")->turnOn();//set power to flow to main grid
-        m_phyDevManager.GetDevice("battery1")->turnOff();//set power to flow to main grid
-    }
   }//end if("demand")
 
   // You received a Load change of source to Normal state
