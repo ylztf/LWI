@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<SSTCount>2</SSTCount>
+<SSTCount>3</SSTCount>
 <state>
 <entry index = "1">
     <device>grid1</device>
@@ -51,6 +51,31 @@
     <key>powerLevel</key>
     <parent>2</parent>
   </entry>
+<entry index = "11">
+    <device>grid3</device>
+    <key>powerLevel</key>
+    <parent>3</parent>
+  </entry> 
+  <entry index = "12">
+    <device>pv3</device>
+    <key>powerLevel</key>
+    <parent>3</parent>
+  </entry> 
+<entry index = "13">
+    <device>load3</device>
+    <key>powerLevel</key>
+    <parent>3</parent>
+  </entry>
+  <entry index = "14">
+    <device>battery3</device>
+    <key>powerLevel</key>
+    <parent>3</parent>
+  </entry>
+  <entry index = "15">
+    <device>dg3</device>
+    <key>powerLevel</key>
+    <parent>3</parent>
+  </entry>
 </state>
 <command>
  <entry index = "1">
@@ -92,5 +117,25 @@
     <device>dg2</device>
     <key>onOffSwitch</key>
     <parent>2</parent>
+  </entry>
+ <entry index = "9">
+    <device>grid3</device>
+    <key>onOffSwitch</key>
+    <parent>3</parent>
+  </entry>
+  <entry index = "10">
+    <device>load3</device>
+    <key>onOffSwitch</key>
+    <parent>3</parent>
+  </entry>
+  <entry index = "11">
+    <device>battery3</device>
+    <key>onOffSwitch</key>
+    <parent>3</parent>
+  </entry>
+  <entry index = "12">
+    <device>dg3</device>
+    <key>onOffSwitch</key>
+    <parent>3</parent>
   </entry>
 </command>
